@@ -3,87 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bau-Protokoll BPB (Pro+)</title>
+    <title>Übergabeprotokoll BPB (Pro+)</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#213c7a">
     <link rel="apple-touch-icon" href="icon.png">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        :root {
-            --primary: #213c7a;
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text: #e0e0e0;
-            --border: #333;
-            --input-bg: #252525;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-        }
-
+        :root { --primary: #213c7a; --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #333; --input-bg: #252525; --success: #2ecc71; --danger: #e74c3c; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
         .container { display: flex; flex-direction: row; height: 100vh; }
         @media (max-width: 900px) { .container { flex-direction: column; height: auto; } .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border); padding: 15px !important; } .main-content { padding: 10px !important; } }
         .sidebar { width: 350px; background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; box-sizing: border-box; }
         .main-content { flex: 1; padding: 20px; overflow-y: auto; background: var(--bg); position: relative; }
-
+        
         h2 { color: var(--primary); margin-top: 0; font-size: 1.1rem; }
         .form-group { margin-bottom: 10px; }
         label { display: block; margin-bottom: 4px; font-size: 0.85rem; opacity: 0.8; }
-        
         input[type="text"], select, textarea { width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 16px; box-sizing: border-box; }
         textarea { resize: vertical; min-height: 60px; }
-
-        button { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 0.95rem; transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
-        button:active { transform: scale(0.98); }
-
+        
+        button { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
         .btn-add { background: var(--primary); color: white; margin-top: 5px; }
         .btn-pdf { background: var(--danger); color: white; margin-top: 15px; font-size: 1rem; }
         .btn-action { background: #333; color: white; flex: 1; font-size: 0.8rem; padding: 10px; }
-        .btn-edit-photo { background: #f39c12; color: white; margin-top: 5px; padding: 8px; font-size: 0.85rem; }
         
-        .actions-grid { display: flex; gap: 8px; margin-top: 8px; }
-
-        .field-card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); position: relative; }
+        .field-card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); }
         .field-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
-        .field-title { font-weight: bold; color: var(--primary); font-size: 1rem; }
+        .field-title { font-weight: bold; color: var(--primary); }
         .field-controls { display: flex; gap: 4px; }
         .btn-ctrl { background: #333; color: #fff; padding: 5px 10px; font-size: 11px; width: auto; border-radius: 4px; }
         .btn-delete { background: rgba(231, 76, 60, 0.2); color: var(--danger); border: 1px solid rgba(231, 76, 60, 0.5); }
-
-        .photo-upload-box { border: 2px dashed var(--border); padding: 15px; text-align: center; border-radius: 6px; cursor: pointer; background: var(--input-bg); font-size: 0.9rem; }
-        .photo-preview-img { max-width: 100%; max-height: 250px; border-radius: 6px; margin-top: 8px; display: none; border: 1px solid #555;}
         
-        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; }
-        .checkbox-wrapper input { width: 22px; height: 22px; accent-color: var(--success); cursor: pointer; }
-        .checkbox-wrapper label { margin: 0; font-size: 1rem; opacity: 1; }
+        .photo-upload-box { border: 2px dashed var(--border); padding: 15px; text-align: center; border-radius: 6px; cursor: pointer; background: var(--input-bg); display: block; margin-top: 5px; }
+        .photo-preview-img { max-width: 100%; border-radius: 6px; margin-top: 8px; border: 1px solid #555; display: block; }
 
-        /* Projektverwaltung */
-        .project-header { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
-        .project-header select { font-weight: bold; color: var(--primary); background: #111; margin-bottom: 10px;}
-        .sync-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #444; }
+        /* Verstecke den Print-Bereich auf dem Bildschirm */
+        #print-zone { display: none; }
 
-        /* Zeichen-Overlay (Modal) */
-        #draw-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; }
-        #draw-canvas-container { position: relative; max-width: 100%; max-height: 70vh; overflow: auto; background: #fff; border: 2px solid var(--primary); }
-        #draw-canvas { cursor: crosshair; display: block; touch-action: none; }
-        .draw-controls { display: flex; gap: 10px; margin-top: 15px; width: 100%; max-width: 400px; }
-
-        /* --- PDF EXPORT STYLES (html2pdf Engine) --- */
-        #print-zone { position: absolute; left: -9999px; top: 0; width: 800px; background: white; color: black; padding: 25px; box-sizing: border-box; font-family: sans-serif; }
-        .print-header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
-        .print-header img { max-height: 60px; margin-bottom: 10px; }
-        .print-header h1 { font-size: 24px; margin: 0; text-transform: uppercase; color: #111; }
-        .print-header p { font-size: 12px; color: #666; margin: 5px 0 0 0; }
-        .print-item { margin-bottom: 15px; page-break-inside: avoid; }
-        .print-label { font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
-        .print-value { font-size: 14px; background: #f9f9f9; padding: 8px; border-left: 3px solid var(--primary); white-space: pre-wrap; color: #111;}
-        .print-checkbox { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .print-checkbox-val { font-weight: bold; font-size: 14px; }
-        .print-photo { max-width: 100%; max-height: 400px; border: 1px solid #ddd; padding: 3px; margin-top: 5px; }
-        .print-title { font-size: 18px; color: var(--primary); border-bottom: 1px solid #ddd; margin-top: 25px; padding-bottom: 5px; }
+        /* Nativer Print-Style (extrem robust) */
+        @media print {
+            body { background: white; color: black; display: block; }
+            .sidebar, .main-content, #draw-modal { display: none !important; }
+            
+            #print-zone { display: block !important; background: white; color: black; width: 100%; padding: 0; font-family: Arial, sans-serif; }
+            
+            .print-header { border-bottom: 3px solid var(--primary); padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
+            .print-header img { max-height: 70px; margin-bottom: 10px; }
+            .print-header h1 { font-size: 24px; margin: 0; text-transform: uppercase; color: #111; }
+            .print-header p { font-size: 12px; color: #666; margin: 5px 0 0 0; }
+            
+            .print-item { margin-bottom: 20px; page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 15px;}
+            .print-label { font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+            .print-value { font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 4px solid var(--primary); white-space: pre-wrap; color: #111;}
+            .print-photo { max-width: 100%; max-height: 400px; border: 1px solid #ddd; padding: 3px; margin-top: 10px; display: block; }
+            .print-title { font-size: 18px; color: var(--primary); border-bottom: 1px solid #ddd; margin-top: 25px; padding-bottom: 5px; page-break-after: avoid; }
+            .print-maps { font-size: 13px; margin-top: 8px; }
+            .print-maps a { color: var(--primary); text-decoration: underline; font-weight: bold; }
+            
+            @page { margin: 15mm; }
+        }
     </style>
 </head>
 <body>
@@ -94,247 +73,95 @@
             <img src="logo.png" alt="BPB Logo" style="max-width: 100%; height: auto;">
         </div>
         
-        <div class="project-header">
-            <label>Aktuelles Projekt / Vorhaben</label>
-            <select id="project-select" onchange="switchProject()"></select>
-            <div class="actions-grid">
-                <button class="btn-action" onclick="newProject()">Neu</button>
-                <button class="btn-action" onclick="copyProject()">Kopieren</button>
-                <button class="btn-action" onclick="renameProject()">Umbenennen</button>
-                <button class="btn-action" style="background:var(--danger);" onclick="deleteProject()">Löschen</button>
-            </div>
+        <div class="project-header" style="background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;">
+            <label>Projekt</label>
+            <select id="project-select" onchange="switchProject()" style="margin-bottom: 5px;"></select>
             
-            <div class="sync-section">
-                <label>Backup aller Projekte (JSON)</label>
-                <div class="actions-grid">
-                    <button class="btn-action" style="background:var(--success);" onclick="exportAllProjects()">💾 Export</button>
-                    <button class="btn-action" onclick="document.getElementById('import-projects-file').click()">📂 Import</button>
-                </div>
-                <input type="file" id="import-projects-file" accept=".json" style="display:none" onchange="importAllProjects(event)">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                <button class="btn-action" onclick="newProject()">Neu</button>
+                <button class="btn-action" onclick="renameProject()">Umbenennen</button>
+                <button class="btn-action" onclick="copyProject()">Kopieren</button>
+                <button class="btn-action" onclick="deleteProject()" style="background:var(--danger)">Löschen</button>
             </div>
         </div>
 
-        <h2>🛠 Editor (Kompakt)</h2>
-
+        <h2 style="margin-top:20px;">🛠 Editor</h2>
         <div class="form-group">
-            <label>Feld hinzufügen</label>
+            <label>Neues Feld</label>
             <select id="type-select">
-                <option value="checkbox">☑ To-Do / Checkbox</option>
-                <option value="header">📑 Kapitel / Überschrift</option>
-                <option value="text">✏️ Kurzer Text</option>
-                <option value="textarea">📝 Mehrzeilige Notiz</option>
-                <option value="photo">📷 Foto</option>
-                <option value="location">📍 Standort (GPS)</option>
+                <option value="combo">📸 Kombi (Text+Foto+GPS)</option>
+                <option value="checkbox">☑ Checkbox</option>
+                <option value="header">📑 Kapitel</option>
+                <option value="text">✏️ Textfeld (einzeilig)</option>
+                <option value="textarea">📝 Notizfeld (mehrzeilig)</option>
+                <option value="location">📍 Nur GPS</option>
             </select>
         </div>
-
         <div class="form-group">
-            <label>Beschriftung (z.B. "Baustelle sauber?")</label>
-            <input type="text" id="label-input" placeholder="...">
+            <label>Beschriftung (optional)</label>
+            <input type="text" id="label-input" placeholder="z.B. Gleiszustand">
         </div>
-
         <button class="btn-add" onclick="addItem()">➕ Hinzufügen</button>
 
-        <hr style="border:0; border-top: 1px solid var(--border); margin: 25px 0;">
-
-        <button class="btn-pdf" onclick="generatePDF()">📄 PDF Erstellen & Teilen</button>
+        <hr style="border:0; border-top: 1px solid var(--border); margin: 20px 0;">
+        
+        <button class="btn-pdf" onclick="generatePDF()">📄 PDF Drucken / Speichern</button>
     </div>
 
-    <div class="main-content" id="editor-list">
-        <div style="text-align:center; color:#888; margin-top:50px;">Lade Daten...</div>
-    </div>
-</div>
-
-<div id="draw-modal">
-    <div style="color:white; margin-bottom:10px; font-weight:bold;">Foto markieren (Rot)</div>
-    <div id="draw-canvas-container">
-        <canvas id="draw-canvas"></canvas>
-    </div>
-    <div class="draw-controls">
-        <button style="background:#555;" onclick="closeDrawModal()">Abbrechen</button>
-        <button style="background:var(--success);" onclick="saveDrawing()">Speichern</button>
-    </div>
+    <div class="main-content" id="editor-list"></div>
 </div>
 
 <div id="print-zone"></div>
 
 <script>
-    // --- PWA Service Worker laden ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                console.log('Service Worker registriert!');
-            }).catch(err => console.log('Service Worker Fehler', err));
+    const dbName = "BauProtokollDB", storeName = "projectsStore";
+    let dbInstance = null, projects = {}, currentProjectName = "", items = [];
+
+    async function initDB() {
+        if (dbInstance) return dbInstance;
+        return new Promise((res) => {
+            let req = indexedDB.open(dbName, 1);
+            req.onupgradeneeded = e => e.target.result.createObjectStore(storeName);
+            req.onsuccess = e => { dbInstance = e.target.result; res(dbInstance); };
         });
     }
+    async function saveToDB(key, data) { const db = await initDB(); db.transaction(storeName, "readwrite").objectStore(storeName).put(data, key); }
+    async function loadFromDB(key) { const db = await initDB(); return new Promise(res => { let req = db.transaction(storeName, "readonly").objectStore(storeName).get(key); req.onsuccess = () => res(req.result); }); }
 
-    // --- High-Performance IndexedDB Datenbank (Sprengt Speicherlimit) ---
-    const dbName = "BauProtokollDB";
-    const storeName = "projectsStore";
-    let dbInstance = null;
-
-    function initDB() {
-        return new Promise((resolve, reject) => {
-            if (dbInstance) return resolve(dbInstance);
-            let request = indexedDB.open(dbName, 1);
-            request.onupgradeneeded = (e) => {
-                let db = e.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    db.createObjectStore(storeName);
-                }
-            };
-            request.onsuccess = (e) => {
-                dbInstance = e.target.result;
-                resolve(dbInstance);
-            };
-            request.onerror = (e) => reject(e.target.error);
-        });
-    }
-
-    async function saveToDB(key, data) {
-        const db = await initDB();
-        return new Promise((resolve, reject) => {
-            let tx = db.transaction(storeName, "readwrite");
-            tx.objectStore(storeName).put(data, key);
-            tx.oncomplete = () => resolve();
-            tx.onerror = (e) => reject(e.target.error);
-        });
-    }
-
-    async function loadFromDB(key) {
-        const db = await initDB();
-        return new Promise((resolve, reject) => {
-            let tx = db.transaction(storeName, "readonly");
-            let req = tx.objectStore(storeName).get(key);
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = (e) => reject(e.target.error);
-        });
-    }
-
-    // --- Globale Variablen ---
-    let projects = {};
-    let currentProjectName = "";
-    let items = [];
-
-    // --- App Start & Migration alter Daten ---
     window.addEventListener('DOMContentLoaded', async () => {
-        try {
-            // Lade aus neuer, großer Datenbank
-            const savedData = await loadFromDB('bau_projects');
-            const savedProject = await loadFromDB('bau_current_project');
-            
-            // Lese alte Speicherdaten aus (Migration)
-            const legacyData = localStorage.getItem('bau_projects');
-            const legacyProject = localStorage.getItem('bau_current_project');
-
-            if (savedData) {
-                projects = savedData;
-            } else if (legacyData) {
-                // Alte Daten gefunden -> Übernehmen!
-                projects = JSON.parse(legacyData);
-                localStorage.removeItem('bau_projects'); // Altes aufräumen
-            } else {
-                projects = { "Standard Projekt": [] };
-            }
-
-            if (savedProject) {
-                currentProjectName = savedProject;
-            } else if (legacyProject) {
-                currentProjectName = legacyProject;
-                localStorage.removeItem('bau_current_project'); // Altes aufräumen
-            } else {
-                currentProjectName = Object.keys(projects)[0] || "Standard Projekt";
-            }
-
-            if(!projects[currentProjectName]) projects[currentProjectName] = [];
-            items = projects[currentProjectName];
-
-            // Daten einmalig sicher in die neue DB schreiben
-            saveProjects();
-
-            renderProjectSelect();
-            render();
-        } catch (e) {
-            console.error("Datenbankfehler", e);
-        }
+        const savedData = await loadFromDB('bau_projects');
+        const savedProject = await loadFromDB('bau_current_project');
+        projects = savedData || { "Standard Projekt": [] };
+        currentProjectName = savedProject || Object.keys(projects)[0];
+        items = projects[currentProjectName] || [];
+        renderProjectSelect(); render();
     });
 
-    function saveProjects() {
-        projects[currentProjectName] = items;
-        saveToDB('bau_projects', projects);
-        saveToDB('bau_current_project', currentProjectName);
-    }
+    function saveProjects() { projects[currentProjectName] = items; saveToDB('bau_projects', projects); saveToDB('bau_current_project', currentProjectName); }
 
-    // --- Import / Export ---
-    function exportAllProjects() {
-        saveProjects(); 
-        const dataStr = JSON.stringify(projects, null, 2);
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const date = new Date().toISOString().split('T')[0];
-        a.download = `BPB_Projekte_Backup_${date}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function importAllProjects(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (typeof importedData === 'object' && !Array.isArray(importedData)) {
-                    if(confirm("Projekte überschreiben?")) {
-                        projects = { ...projects, ...importedData };
-                        currentProjectName = Object.keys(projects)[0];
-                        items = projects[currentProjectName];
-                        saveProjects();
-                        renderProjectSelect();
-                        render();
-                        alert("Erfolgreich importiert!");
-                    }
-                }
-            } catch (err) { alert("Ungültiges Dateiformat."); }
-        };
-        reader.readAsText(file);
-        event.target.value = ""; 
-    }
-
-    // --- Projekt UI ---
     function renderProjectSelect() {
-        const sel = document.getElementById('project-select');
-        sel.innerHTML = '';
-        for (let pName in projects) {
-            const opt = document.createElement('option');
-            opt.value = pName;
-            opt.innerText = pName;
-            if (pName === currentProjectName) opt.selected = true;
-            sel.appendChild(opt);
-        }
-    }
-
-    function switchProject() {
-        saveProjects(); 
-        currentProjectName = document.getElementById('project-select').value;
-        items = projects[currentProjectName];
-        render();
-    }
-
-    function newProject() {
-        const name = prompt("Projektname:");
-        if (name && !projects[name]) {
-            saveProjects();
-            projects[name] = [];
-            currentProjectName = name;
-            items = projects[currentProjectName];
-            renderProjectSelect(); render(); saveProjects();
-        }
+        const sel = document.getElementById('project-select'); sel.innerHTML = '';
+        for (let p in projects) { let o = document.createElement('option'); o.value = p; o.innerText = p; if(p===currentProjectName) o.selected=true; sel.appendChild(o); }
     }
     
+    function switchProject() { saveProjects(); currentProjectName = document.getElementById('project-select').value; items = projects[currentProjectName]; render(); }
+    
+    function newProject() { 
+        let n = prompt("Name des Projekts:"); 
+        if(n && !projects[n]) { projects[n]=[]; currentProjectName=n; items=[]; renderProjectSelect(); render(); saveProjects(); }
+        else if (projects[n]) { alert("Projekt existiert bereits."); }
+    }
+    
+    function renameProject() {
+        const newName = prompt("Neuer Name:", currentProjectName);
+        if (newName && newName !== currentProjectName && !projects[newName]) {
+            projects[newName] = projects[currentProjectName];
+            delete projects[currentProjectName];
+            currentProjectName = newName;
+            renderProjectSelect(); saveProjects();
+        }
+    }
+
     function copyProject() {
         const name = prompt("Name der Kopie:", currentProjectName + " (Kopie)");
         if (name && !projects[name]) {
@@ -346,207 +173,151 @@
             renderProjectSelect(); render(); saveProjects();
         }
     }
-
-    function renameProject() {
-        const newName = prompt("Neuer Name:", currentProjectName);
-        if (newName && newName !== currentProjectName && !projects[newName]) {
-            projects[newName] = projects[currentProjectName];
-            delete projects[currentProjectName];
-            currentProjectName = newName;
-            renderProjectSelect(); saveProjects();
-        }
-    }
-
-    function deleteProject() {
+    
+    function deleteProject() { 
         if (Object.keys(projects).length <= 1) return alert("Letztes Projekt kann nicht gelöscht werden.");
-        if (confirm(`Projekt löschen?`)) {
-            delete projects[currentProjectName];
-            currentProjectName = Object.keys(projects)[0];
-            items = projects[currentProjectName];
-            renderProjectSelect(); render(); saveProjects();
+        if(confirm("Dieses Projekt wirklich löschen?")) { 
+            delete projects[currentProjectName]; currentProjectName=Object.keys(projects)[0]; items=projects[currentProjectName]; renderProjectSelect(); render(); saveProjects(); 
         }
-    }
-
-    // --- Editor Logik ---
-    function getLocation(id) {
-        if (!navigator.geolocation) return alert("GPS nicht unterstützt.");
-        const btn = document.getElementById('btn-loc-' + id);
-        if(btn) btn.innerText = "⏳ Suche...";
-        navigator.geolocation.getCurrentPosition(
-            pos => { update(id, `${pos.coords.latitude},${pos.coords.longitude}`); render(); },
-            err => { alert("Standortfehler."); if(btn) btn.innerText = "📍 Standort abrufen"; render(); },
-            { enableHighAccuracy: true }
-        );
     }
 
     function addItem() {
         const type = document.getElementById('type-select').value;
-        const label = document.getElementById('label-input').value || 'Feld';
-        items.push({ id: String(Date.now()), type: type, label: label, value: '' });
-        document.getElementById('label-input').value = ''; render();
+        const inputVal = document.getElementById('label-input').value.trim();
+        const label = inputVal; 
+        
+        items.push({ id: String(Date.now()), type, label, value: '', photo: '', coords: '' });
+        document.getElementById('label-input').value = ''; render(); saveProjects();
     }
-
-    function removeItem(id) { items = items.filter(i => String(i.id) !== String(id)); saveProjects(); render(); }
+    
+    function removeItem(id) { items = items.filter(i => i.id !== id); render(); saveProjects(); }
     
     function move(id, dir) {
-        const idx = items.findIndex(i => String(i.id) === String(id));
-        if (idx === -1) return;
-        if (dir === -1 && idx > 0) [items[idx], items[idx-1]] = [items[idx-1], items[idx]];
-        if (dir === 1 && idx < items.length-1) [items[idx], items[idx+1]] = [items[idx+1], items[idx]];
-        saveProjects(); render();
-    }
-
-    function update(id, val) { const item = items.find(i => String(i.id) === String(id)); if (item) item.value = val; saveProjects(); }
-    
-    function editLabel(id) {
-        const item = items.find(i => String(i.id) === String(id));
-        if(item) {
-            const newLabel = prompt("Neue Beschriftung:", item.label);
-            if(newLabel && newLabel.trim() !== "") { item.label = newLabel.trim(); saveProjects(); render(); }
+        const idx = items.findIndex(i => i.id === id);
+        if((dir === -1 && idx > 0) || (dir === 1 && idx < items.length-1)) {
+            [items[idx], items[idx+dir]] = [items[idx+dir], items[idx]];
+            render(); saveProjects();
         }
     }
+    
+    function editLabel(id) {
+        const item = items.find(i => i.id === id);
+        if(item) {
+            const newLabel = prompt("Neue Beschriftung (leer lassen für keine):", item.label);
+            if(newLabel !== null) { item.label = newLabel.trim(); saveProjects(); render(); }
+        }
+    }
+    
+    function update(id, field, val) { const i = items.find(x => x.id === id); if(i) i[field] = val; saveProjects(); }
 
     function handleFile(e, id) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = function(event) {
-            const img = new Image();
-            img.src = event.target.result;
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader(); reader.readAsDataURL(file);
+        reader.onload = function(ev) {
+            const img = new Image(); img.src = ev.target.result;
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                let width = img.width, height = img.height;
-                if (width > 1200) { height *= 1200 / width; width = 1200; }
-                canvas.width = width; canvas.height = height;
-                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                update(id, canvas.toDataURL('image/jpeg', 0.8));
-                render();
+                let w = img.width, h = img.height; if(w > 1000) { h *= 1000/w; w = 1000; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                update(id, 'photo', canvas.toDataURL('image/jpeg', 0.7)); render();
             }
         };
     }
 
-    // --- Foto Markierung (Canvas) ---
-    let drawingCanvas = document.getElementById('draw-canvas');
-    let ctx = drawingCanvas.getContext('2d');
-    let isDrawing = false, editingPhotoId = null;
-
-    function openDrawModal(id) {
-        const item = items.find(i => String(i.id) === String(id));
-        if(!item || !item.value) return;
-        editingPhotoId = String(id);
-        document.getElementById('draw-modal').style.display = 'flex';
-        const img = new Image(); img.src = item.value;
-        img.onload = function() {
-            let w = img.width, h = img.height;
-            const maxW = window.innerWidth * 0.9, maxH = window.innerHeight * 0.6;
-            if(w > maxW) { h *= maxW/w; w = maxW; }
-            if(h > maxH) { w *= maxH/h; h = maxH; }
-            drawingCanvas.width = w; drawingCanvas.height = h;
-            ctx.drawImage(img, 0, 0, w, h);
-            ctx.strokeStyle = 'red'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        }
+    function getLocation(id, field = 'coords') {
+        if (!navigator.geolocation) return alert("GPS nicht unterstützt");
+        navigator.geolocation.getCurrentPosition(p => {
+            update(id, field, `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`); render();
+        }, () => alert("GPS Fehler"), { enableHighAccuracy: true });
     }
 
-    function closeDrawModal() { document.getElementById('draw-modal').style.display = 'none'; editingPhotoId = null; }
-    function saveDrawing() { if(!editingPhotoId) return; update(editingPhotoId, drawingCanvas.toDataURL('image/jpeg', 0.9)); closeDrawModal(); render(); }
-    const getPos = (e) => { const rect = drawingCanvas.getBoundingClientRect(); return { x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top }; };
-    const startDraw = (e) => { isDrawing = true; ctx.beginPath(); const pos = getPos(e); ctx.moveTo(pos.x, pos.y); e.preventDefault(); };
-    const draw = (e) => { if(!isDrawing) return; const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); };
-    const stopDraw = () => isDrawing = false;
-    drawingCanvas.addEventListener('mousedown', startDraw); drawingCanvas.addEventListener('mousemove', draw); window.addEventListener('mouseup', stopDraw);
-    drawingCanvas.addEventListener('touchstart', startDraw, {passive: false}); drawingCanvas.addEventListener('touchmove', draw, {passive: false}); drawingCanvas.addEventListener('touchend', stopDraw);
-
-    // --- Render Formular ---
     function render() {
         const list = document.getElementById('editor-list'); list.innerHTML = '';
-        if (items.length === 0) return list.innerHTML = `<div style="text-align:center; color:#888; margin-top:50px;">Keine Felder.</div>`;
-
         items.forEach(item => {
             const card = document.createElement('div'); card.className = 'field-card';
-            let html = `<div class="field-header"><div class="field-title">${item.type === 'header' ? '📑 ' : (item.type === 'checkbox' ? '☑ ' : (item.type === 'location' ? '📍 ' : '✏️ '))}${item.label}</div>
-            <div class="field-controls"><button class="btn-ctrl" onclick="editLabel('${item.id}')">✏️</button><button class="btn-ctrl" onclick="move('${item.id}', -1)">↑</button><button class="btn-ctrl" onclick="move('${item.id}', 1)">↓</button><button class="btn-ctrl btn-delete" onclick="removeItem('${item.id}')">✖</button></div></div>`;
-            if (item.type === 'header') html += `<div style="color:#888; font-size:0.85rem;">(Überschrift)</div>`;
-            else if (item.type === 'photo') html += `<label class="photo-upload-box">📷 Foto<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label><img src="${item.value || ''}" class="photo-preview-img" style="display: ${item.value ? 'block' : 'none'}">${item.value ? `<button class="btn-edit-photo" onclick="openDrawModal('${item.id}')">🖌️ Markieren</button>` : ''}`;
-            else if (item.type === 'checkbox') html += `<div class="checkbox-wrapper"><input type="checkbox" ${item.value ? 'checked' : ''} onchange="update('${item.id}', this.checked)"><label>Erledigt / Bestätigt</label></div>`;
-            else if (item.type === 'location') {
-                if (item.value) {
-                    html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://www.google.com/maps?q=$${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', '')">🗑️ Neu</button></div>`;
-                } else html += `<button id="btn-loc-${item.id}" class="btn-action" style="background: #2980b9; width: 100%;" onclick="getLocation('${item.id}')">📍 Standort abrufen</button>`;
-            } else {
-                const tag = item.type === 'textarea' ? 'textarea' : 'input type="text"';
-                html += `<${tag} id="input-${item.id}" placeholder="Eingabe..." oninput="update('${item.id}', this.value)"></${tag === 'textarea' ? 'textarea' : 'input'}>`;
+            
+            const displayLabel = item.label ? item.label : '<span style="color:#888; font-weight:normal;">(Ohne Beschriftung)</span>';
+            
+            let html = `
+                <div class="field-header">
+                    <div class="field-title">${displayLabel}</div>
+                    <div class="field-controls">
+                        <button class="btn-ctrl" onclick="editLabel('${item.id}')">✏️</button>
+                        <button class="btn-ctrl" onclick="move('${item.id}', -1)">↑</button>
+                        <button class="btn-ctrl" onclick="move('${item.id}', 1)">↓</button>
+                        <button class="btn-ctrl btn-delete" onclick="removeItem('${item.id}')">✖</button>
+                    </div>
+                </div>`;
+            
+            if (item.type === 'combo') {
+                html += `
+                    <textarea placeholder="Notiz..." oninput="update('${item.id}', 'value', this.value)">${item.value}</textarea>
+                    <label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
+                    ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
+                    <button class="btn-action" style="background:#2980b9;margin-top:10px;width:100%" onclick="getLocation('${item.id}')">📍 GPS: ${item.coords || 'jetzt abrufen'}</button>
+                `;
+            } else if (item.type === 'location') {
+                 if (item.value) {
+                    html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com/maps?q=${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
+                } else {
+                    html += `<button class="btn-action" style="background:#2980b9;width:100%" onclick="getLocation('${item.id}', 'value')">📍 Standort abrufen</button>`;
+                }
+            } else if (item.type === 'checkbox') {
+                html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt / OK</label></div>`;
+            } else if (item.type === 'text') {
+                html += `<input type="text" placeholder="Eingabe..." oninput="update('${item.id}', 'value', this.value)" value="${item.value}">`;
+            } else if (item.type === 'textarea') {
+                html += `<textarea oninput="update('${item.id}', 'value', this.value)">${item.value}</textarea>`;
+            } else if (item.type === 'header') {
+                html += `<div style="color:#888; font-size:0.8rem;">(Kapitel-Überschrift)</div>`;
             }
             card.innerHTML = html; list.appendChild(card);
-            if (item.type === 'text' || item.type === 'textarea') document.getElementById(`input-${item.id}`).value = item.value || '';
+            let t = card.querySelector('textarea, input[type="text"]'); if(t) t.value = item.value;
         });
     }
 
-    // --- Echter PDF Export & Teilen (html2pdf Engine) ---
+    // Zurück zur robusten nativen Druckfunktion
     function generatePDF() {
-        if(items.length === 0) return alert("Das Dokument ist leer!");
-
-        const btn = document.querySelector('.btn-pdf');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Erstelle PDF...";
-        btn.style.pointerEvents = "none";
+        if(items.length === 0) return alert("Das Protokoll ist leer!");
 
         const printZone = document.getElementById('print-zone');
+        
         let printHTML = `
             <div class="print-header">
                 <img src="logo.png">
                 <h1>Übergabeprotokoll</h1>
-                <p>Projekt: <b>${currentProjectName}</b> | Datum: ${new Date().toLocaleDateString('de-DE')} | ${new Date().toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr</p>
+                <p>Projekt: <b>${currentProjectName}</b> | Erstellt am: ${new Date().toLocaleDateString('de-DE')} | ${new Date().toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr</p>
             </div>
         `;
 
         items.forEach(item => {
-            if (item.type === 'header') printHTML += `<h2 class="print-title">${item.label}</h2>`;
-            else if (item.type === 'photo' && item.value) printHTML += `<div class="print-item"><div class="print-label">${item.label}</div><img src="${item.value}" class="print-photo"></div>`;
-            else if (item.type === 'checkbox') printHTML += `<div class="print-item print-checkbox"><div style="width: 70%;">${item.label}</div><div class="print-checkbox-val" style="color: ${item.value ? '#27ae60' : '#e74c3c'};">${item.value ? '☑ JA' : '☐ NEIN'}</div></div>`;
-            else if (item.type === 'location') printHTML += `<div class="print-item"><div class="print-label">${item.label}</div><div class="print-value">${item.value ? `<a href="https://www.google.com/maps?q=$${item.value}" style="color:#213c7a;">📍 ${item.value}</a>` : '-'}</div></div>`;
-            else printHTML += `<div class="print-item"><div class="print-label">${item.label}</div><div class="print-value">${item.value ? item.value.replace(/\n/g, '<br>') : '-'}</div></div>`;
-        });
-        printZone.innerHTML = printHTML;
-
-        // PDF Einstellungen
-        const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     `Bau-Protokoll_${currentProjectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.95 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        // Generiere Blob (PDF-Datei) im Hintergrund
-        html2pdf().set(opt).from(printZone).output('blob').then(function(pdfBlob) {
-            btn.innerHTML = originalText;
-            btn.style.pointerEvents = "auto";
-            printZone.innerHTML = ''; // RAM freigeben
-            
-            const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-            
-            // Nativer "Teilen"-Dialog (Macht sich super auf dem Handy!)
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
-                    files: [file],
-                    title: 'Bau-Protokoll',
-                    text: `Hier ist das Protokoll: ${currentProjectName}`
-                }).catch(e => console.log('Teilen abgebrochen:', e));
+            if (item.type === 'header') {
+                if(item.label) printHTML += `<h2 class="print-title">${item.label}</h2>`;
+            } else if (item.type === 'location') {
+                printHTML += `<div class="print-item">`;
+                if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
+                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com/maps?q=${item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div>
+                    </div>`;
             } else {
-                // Fallback (z.B. am Laptop): Normaler Download
-                const url = URL.createObjectURL(pdfBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = opt.filename;
-                a.click();
-                URL.revokeObjectURL(url);
+                printHTML += `<div class="print-item">`;
+                if(item.label) {
+                    printHTML += `<div class="print-label">${item.label}</div>`;
+                }
+                printHTML += `<div class="print-value">${item.value ? item.value.replace(/\n/g, '<br>') : '-'}</div>`;
+                
+                if(item.type === 'combo') {
+                    if(item.photo) printHTML += `<img src="${item.photo}" class="print-photo">`;
+                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com/maps?q=${item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
+                }
+                printHTML += `</div>`;
             }
-        }).catch(err => {
-            alert("Fehler bei der PDF-Erstellung.");
-            btn.innerHTML = originalText;
-            btn.style.pointerEvents = "auto";
         });
+
+        printZone.innerHTML = printHTML;
+        
+        // Timeout gibt dem Browser kurz Zeit, das Layout für den Druck aufzubauen
+        setTimeout(() => { window.print(); }, 300);
     }
 </script>
 </body>
