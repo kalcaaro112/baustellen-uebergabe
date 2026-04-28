@@ -1,6 +1,6 @@
 {
-  "name": "Bau-Protokoll Pro+",
-  "short_name": "Bau-Protokoll",
+  "name": "Übergabeprotokoll",
+  "short_name": "Übergabe",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#121212",

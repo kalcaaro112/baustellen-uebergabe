@@ -38,21 +38,17 @@
         .photo-upload-box { border: 2px dashed var(--border); padding: 15px; text-align: center; border-radius: 6px; cursor: pointer; background: var(--input-bg); display: block; margin-top: 5px; }
         .photo-preview-img { max-width: 100%; border-radius: 6px; margin-top: 8px; border: 1px solid #555; display: block; }
 
-        /* Verstecke den Print-Bereich auf dem Bildschirm */
         #print-zone { display: none; }
 
         /* Nativer Print-Style */
         @media print {
             body { background: white; color: black; display: block; }
             .sidebar, .main-content, #draw-modal { display: none !important; }
-            
             #print-zone { display: block !important; background: white; color: black; width: 100%; padding: 0; font-family: Arial, sans-serif; }
-            
             .print-header { border-bottom: 3px solid var(--primary); padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
             .print-header img { max-height: 70px; margin-bottom: 10px; }
             .print-header h1 { font-size: 24px; margin: 0; text-transform: uppercase; color: #111; }
             .print-header p { font-size: 12px; color: #666; margin: 5px 0 0 0; }
-            
             .print-item { margin-bottom: 20px; page-break-inside: avoid; border-bottom: 1px solid #eee; padding-bottom: 15px;}
             .print-label { font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
             .print-value { font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 4px solid var(--primary); white-space: pre-wrap; color: #111;}
@@ -60,7 +56,6 @@
             .print-title { font-size: 18px; color: var(--primary); border-bottom: 1px solid #ddd; margin-top: 25px; padding-bottom: 5px; page-break-after: avoid; }
             .print-maps { font-size: 13px; margin-top: 8px; }
             .print-maps a { color: var(--primary); text-decoration: underline; font-weight: bold; }
-            
             @page { margin: 15mm; }
         }
     </style>
@@ -82,6 +77,21 @@
                 <button class="btn-action" onclick="renameProject()">Umbenennen</button>
                 <button class="btn-action" onclick="copyProject()">Kopieren</button>
                 <button class="btn-action" onclick="deleteProject()" style="background:var(--danger)">Löschen</button>
+            </div>
+            
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #444;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                    <button class="btn-action" style="background:var(--success);" onclick="exportAllProjects()">💾 Backup</button>
+                    <button class="btn-action" onclick="document.getElementById('import-file').click()">📂 Import</button>
+                    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllProjects(event)">
+                </div>
+            </div>
+        </div>
+
+        <div class="project-header" style="background: #213c7a20; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed var(--primary);">
+            <label style="color: var(--primary); font-weight: bold;">📄 Vorlagen von GitHub</label>
+            <div id="template-list" style="display:flex; flex-direction:column; gap:5px; margin-top:8px;">
+                <div style="font-size:0.8rem; color:#888; text-align:center;">Lade Vorlagen...</div>
             </div>
         </div>
 
@@ -115,6 +125,15 @@
 <div id="print-zone"></div>
 
 <script>
+    // --- APP INSTALLATION (PWA) - HIER WAR DER FEHLER! ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker registriert! App ist installierbar.'))
+            .catch(err => console.log('Service Worker Fehler:', err));
+        });
+    }
+
     const dbName = "BauProtokollDB", storeName = "projectsStore";
     let dbInstance = null, projects = {}, currentProjectName = "", items = [];
 
@@ -136,79 +155,100 @@
         currentProjectName = savedProject || Object.keys(projects)[0];
         items = projects[currentProjectName] || [];
         renderProjectSelect(); render();
+        loadTemplatesFromGitHub(); // Vorlagen laden
     });
 
     function saveProjects() { projects[currentProjectName] = items; saveToDB('bau_projects', projects); saveToDB('bau_current_project', currentProjectName); }
 
+    // --- Vorlagen von GitHub laden ---
+    async function loadTemplatesFromGitHub() {
+        // !!! WICHTIG: ÄNDERE DIESE BEIDEN WERTE ZU DEINEN DATEN !!!
+        const username = "kalcaaro112"; // z.B. "MaxMustermann"
+        const repo = "baustellen-uebergabe";    // z.B. "uebergabeprotokoll"
+        
+        const folder = "templates";
+        const container = document.getElementById('template-list');
+        
+        try {
+            const response = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/${folder}`);
+            if (!response.ok) throw new Error("Ordner nicht gefunden");
+            
+            const files = await response.json();
+            const jsonFiles = files.filter(file => file.name.endsWith('.json'));
+
+            if (jsonFiles.length === 0) {
+                container.innerHTML = '<div style="font-size:0.75rem; color:#888; text-align:center;">Noch keine Vorlagen vorhanden.</div>';
+                return;
+            }
+
+            container.innerHTML = ''; 
+            jsonFiles.forEach(file => {
+                const btn = document.createElement('a');
+                btn.href = file.download_url;
+                btn.className = 'btn-action';
+                btn.style.cssText = "text-align:center; text-decoration:none; background: #2980b9; display:block; padding:8px;";
+                const niceName = file.name.replace('.json', '').replace(/_/g, ' ');
+                btn.innerText = "📥 " + niceName;
+                btn.setAttribute('download', file.name);
+                container.appendChild(btn);
+            });
+        } catch (err) {
+            container.innerHTML = '<div style="font-size:0.75rem; color:#e74c3c; text-align:center;">Ordner "templates" nicht gefunden oder kein Internet.</div>';
+        }
+    }
+
+    // --- Import / Export ---
+    function exportAllProjects() {
+        saveProjects(); 
+        const dataStr = JSON.stringify(projects, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Backup_Protokolle_${new Date().toISOString().split('T')[0]}.json`;
+        a.click(); URL.revokeObjectURL(url);
+    }
+
+    function importAllProjects(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (confirm("Möchtest du diese Daten importieren? (Bestehende mit gleichem Namen werden überschrieben)")) {
+                    projects = { ...projects, ...importedData };
+                    currentProjectName = Object.keys(projects)[0];
+                    items = projects[currentProjectName];
+                    saveProjects(); renderProjectSelect(); render(); alert("Erfolgreich importiert!");
+                }
+            } catch (err) { alert("Ungültige Datei."); }
+        };
+        reader.readAsText(file);
+        event.target.value = ""; 
+    }
+
+    // --- Editor Logik ---
     function renderProjectSelect() {
         const sel = document.getElementById('project-select'); sel.innerHTML = '';
         for (let p in projects) { let o = document.createElement('option'); o.value = p; o.innerText = p; if(p===currentProjectName) o.selected=true; sel.appendChild(o); }
     }
     
     function switchProject() { saveProjects(); currentProjectName = document.getElementById('project-select').value; items = projects[currentProjectName]; render(); }
-    
-    function newProject() { 
-        let n = prompt("Name des Projekts:"); 
-        if(n && !projects[n]) { projects[n]=[]; currentProjectName=n; items=[]; renderProjectSelect(); render(); saveProjects(); }
-        else if (projects[n]) { alert("Projekt existiert bereits."); }
-    }
-    
-    function renameProject() {
-        const newName = prompt("Neuer Name:", currentProjectName);
-        if (newName && newName !== currentProjectName && !projects[newName]) {
-            projects[newName] = projects[currentProjectName];
-            delete projects[currentProjectName];
-            currentProjectName = newName;
-            renderProjectSelect(); saveProjects();
-        }
-    }
-
-    function copyProject() {
-        const name = prompt("Name der Kopie:", currentProjectName + " (Kopie)");
-        if (name && !projects[name]) {
-            saveProjects();
-            projects[name] = JSON.parse(JSON.stringify(items));
-            projects[name].forEach(item => item.id = 'copy_' + Date.now() + Math.floor(Math.random()*1000));
-            currentProjectName = name;
-            items = projects[currentProjectName];
-            renderProjectSelect(); render(); saveProjects();
-        }
-    }
-    
-    function deleteProject() { 
-        if (Object.keys(projects).length <= 1) return alert("Letztes Projekt kann nicht gelöscht werden.");
-        if(confirm("Dieses Projekt wirklich löschen?")) { 
-            delete projects[currentProjectName]; currentProjectName=Object.keys(projects)[0]; items=projects[currentProjectName]; renderProjectSelect(); render(); saveProjects(); 
-        }
-    }
+    function newProject() { let n = prompt("Name des Projekts:"); if(n && !projects[n]) { projects[n]=[]; currentProjectName=n; items=[]; renderProjectSelect(); render(); saveProjects(); } else if (projects[n]) alert("Projekt existiert bereits."); }
+    function renameProject() { const newName = prompt("Neuer Name:", currentProjectName); if (newName && newName !== currentProjectName && !projects[newName]) { projects[newName] = projects[currentProjectName]; delete projects[currentProjectName]; currentProjectName = newName; renderProjectSelect(); saveProjects(); } }
+    function copyProject() { const name = prompt("Name der Kopie:", currentProjectName + " (Kopie)"); if (name && !projects[name]) { saveProjects(); projects[name] = JSON.parse(JSON.stringify(items)); projects[name].forEach(item => item.id = 'copy_' + Date.now() + Math.floor(Math.random()*1000)); currentProjectName = name; items = projects[currentProjectName]; renderProjectSelect(); render(); saveProjects(); } }
+    function deleteProject() { if (Object.keys(projects).length <= 1) return alert("Letztes Projekt kann nicht gelöscht werden."); if(confirm("Dieses Projekt wirklich löschen?")) { delete projects[currentProjectName]; currentProjectName=Object.keys(projects)[0]; items=projects[currentProjectName]; renderProjectSelect(); render(); saveProjects(); } }
 
     function addItem() {
         const type = document.getElementById('type-select').value;
         const inputVal = document.getElementById('label-input').value.trim();
-        const label = inputVal; 
-        
-        items.push({ id: String(Date.now()), type, label, value: '', photo: '', coords: '' });
+        items.push({ id: String(Date.now()), type, label: inputVal, value: '', photo: '', coords: '' });
         document.getElementById('label-input').value = ''; render(); saveProjects();
     }
     
     function removeItem(id) { items = items.filter(i => i.id !== id); render(); saveProjects(); }
-    
-    function move(id, dir) {
-        const idx = items.findIndex(i => i.id === id);
-        if((dir === -1 && idx > 0) || (dir === 1 && idx < items.length-1)) {
-            [items[idx], items[idx+dir]] = [items[idx+dir], items[idx]];
-            render(); saveProjects();
-        }
-    }
-    
-    function editLabel(id) {
-        const item = items.find(i => i.id === id);
-        if(item) {
-            const newLabel = prompt("Neue Beschriftung (leer lassen für keine):", item.label);
-            if(newLabel !== null) { item.label = newLabel.trim(); saveProjects(); render(); }
-        }
-    }
-    
+    function move(id, dir) { const idx = items.findIndex(i => i.id === id); if((dir === -1 && idx > 0) || (dir === 1 && idx < items.length-1)) { [items[idx], items[idx+dir]] = [items[idx+dir], items[idx]]; render(); saveProjects(); } }
+    function editLabel(id) { const item = items.find(i => i.id === id); if(item) { const newLabel = prompt("Neue Beschriftung (leer lassen für keine):", item.label); if(newLabel !== null) { item.label = newLabel.trim(); saveProjects(); render(); } } }
     function update(id, field, val) { const i = items.find(x => x.id === id); if(i) i[field] = val; saveProjects(); }
 
     function handleFile(e, id) {
@@ -219,8 +259,7 @@
             img.onload = function() {
                 const canvas = document.createElement('canvas');
                 let w = img.width, h = img.height; if(w > 1000) { h *= 1000/w; w = 1000; }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 update(id, 'photo', canvas.toDataURL('image/jpeg', 0.7)); render();
             }
         };
@@ -228,16 +267,13 @@
 
     function getLocation(id, field = 'coords') {
         if (!navigator.geolocation) return alert("GPS nicht unterstützt");
-        navigator.geolocation.getCurrentPosition(p => {
-            update(id, field, `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`); render();
-        }, () => alert("GPS Fehler"), { enableHighAccuracy: true });
+        navigator.geolocation.getCurrentPosition(p => { update(id, field, `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`); render(); }, () => alert("GPS Fehler"), { enableHighAccuracy: true });
     }
 
     function render() {
         const list = document.getElementById('editor-list'); list.innerHTML = '';
         items.forEach(item => {
             const card = document.createElement('div'); card.className = 'field-card';
-            
             const displayLabel = item.label ? item.label : '<span style="color:#888; font-weight:normal;">(Ohne Beschriftung)</span>';
             
             let html = `
@@ -252,25 +288,18 @@
                 </div>`;
             
             if (item.type === 'combo') {
-                html += `
-                    <textarea placeholder="Notiz..." oninput="update('${item.id}', 'value', this.value)">${item.value}</textarea>
-                    <label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
-                    ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
-                    <button class="btn-action" style="background:#2980b9;margin-top:10px;width:100%" onclick="getLocation('${item.id}')">📍 GPS: ${item.coords || 'jetzt abrufen'}</button>
-                `;
+                html += `<textarea placeholder="Notiz..." oninput="update('${item.id}', 'value', this.value)">${item.value}</textarea>
+                         <label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
+                         ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
+                         <button class="btn-action" style="background:#2980b9;margin-top:10px;width:100%" onclick="getLocation('${item.id}')">📍 GPS: ${item.coords || 'jetzt abrufen'}</button>`;
             } else if (item.type === 'photo') {
-                html += `
-                    <label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
-                    ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
-                `;
+                html += `<label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
+                         ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}`;
             } else if (item.type === 'location') {
-                 if (item.value) {
-                    html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com/?q=${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
-                } else {
-                    html += `<button class="btn-action" style="background:#2980b9;width:100%" onclick="getLocation('${item.id}', 'value')">📍 Standort abrufen</button>`;
-                }
+                 if (item.value) html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com{item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
+                 else html += `<button class="btn-action" style="background:#2980b9;width:100%" onclick="getLocation('${item.id}', 'value')">📍 Standort abrufen</button>`;
             } else if (item.type === 'checkbox') {
-                html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt</label></div>`;
+                html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt / OK</label></div>`;
             } else if (item.type === 'text') {
                 html += `<input type="text" placeholder="Eingabe..." oninput="update('${item.id}', 'value', this.value)" value="${item.value}">`;
             } else if (item.type === 'textarea') {
@@ -285,7 +314,6 @@
 
     function generatePDF() {
         if(items.length === 0) return alert("Das Protokoll ist leer!");
-
         const printZone = document.getElementById('print-zone');
         
         let printHTML = `
@@ -293,8 +321,7 @@
                 <img src="logo.png">
                 <h1>Übergabeprotokoll</h1>
                 <p>Projekt: <b>${currentProjectName}</b> | Erstellt am: ${new Date().toLocaleDateString('de-DE')} | ${new Date().toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'})} Uhr</p>
-            </div>
-        `;
+            </div>`;
 
         items.forEach(item => {
             if (item.type === 'header') {
@@ -302,17 +329,13 @@
             } else if (item.type === 'location') {
                 printHTML += `<div class="print-item">`;
                 if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
-                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com/?q=${item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div>
-                    </div>`;
+                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com{item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div></div>`;
             } else if (item.type === 'checkbox') {
-                // Hier ist der Fix für den Absturz! (Boolean zu "Offen/Erledigt" Text konvertieren)
                 const statusText = item.value ? '☑ Erledigt' : '☐ Offen';
                 const textColor = item.value ? '#2ecc71' : '#e74c3c';
-                
                 printHTML += `<div class="print-item" style="display:flex; justify-content:space-between; align-items:center;">`;
                 if(item.label) printHTML += `<div class="print-label" style="margin:0; font-size:14px; color:#111;">${item.label}</div>`;
-                printHTML += `<div style="font-weight:bold; color:${textColor};">${statusText}</div>`;
-                printHTML += `</div>`;
+                printHTML += `<div style="font-weight:bold; color:${textColor};">${statusText}</div></div>`;
             } else if (item.type === 'photo') {
                 printHTML += `<div class="print-item">`;
                 if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
@@ -321,24 +344,18 @@
                 printHTML += `</div>`;
             } else {
                 printHTML += `<div class="print-item">`;
-                if(item.label) {
-                    printHTML += `<div class="print-label">${item.label}</div>`;
-                }
-                
-                // Sicherheitshalber wandeln wir jeden Inhalt in einen String um, bevor ".replace" greift
+                if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
                 const textVal = String(item.value || '').replace(/\n/g, '<br>');
                 printHTML += `<div class="print-value">${textVal || '-'}</div>`;
-                
                 if(item.type === 'combo') {
                     if(item.photo) printHTML += `<img src="${item.photo}" class="print-photo">`;
-                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com/?q=${item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
+                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com{item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
                 }
                 printHTML += `</div>`;
             }
         });
 
         printZone.innerHTML = printHTML;
-        
         setTimeout(() => { window.print(); }, 300);
     }
 </script>
