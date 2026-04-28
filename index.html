@@ -41,7 +41,7 @@
         /* Verstecke den Print-Bereich auf dem Bildschirm */
         #print-zone { display: none; }
 
-        /* Nativer Print-Style (extrem robust) */
+        /* Nativer Print-Style */
         @media print {
             body { background: white; color: black; display: block; }
             .sidebar, .main-content, #draw-modal { display: none !important; }
@@ -94,6 +94,7 @@
                 <option value="header">📑 Kapitel</option>
                 <option value="text">✏️ Textfeld (einzeilig)</option>
                 <option value="textarea">📝 Notizfeld (mehrzeilig)</option>
+                <option value="photo">📷 Nur Foto</option>
                 <option value="location">📍 Nur GPS</option>
             </select>
         </div>
@@ -257,14 +258,19 @@
                     ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
                     <button class="btn-action" style="background:#2980b9;margin-top:10px;width:100%" onclick="getLocation('${item.id}')">📍 GPS: ${item.coords || 'jetzt abrufen'}</button>
                 `;
+            } else if (item.type === 'photo') {
+                html += `
+                    <label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
+                    ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}
+                `;
             } else if (item.type === 'location') {
                  if (item.value) {
-                    html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com/maps?q=${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
+                    html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com/?q=${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
                 } else {
                     html += `<button class="btn-action" style="background:#2980b9;width:100%" onclick="getLocation('${item.id}', 'value')">📍 Standort abrufen</button>`;
                 }
             } else if (item.type === 'checkbox') {
-                html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt / OK</label></div>`;
+                html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt</label></div>`;
             } else if (item.type === 'text') {
                 html += `<input type="text" placeholder="Eingabe..." oninput="update('${item.id}', 'value', this.value)" value="${item.value}">`;
             } else if (item.type === 'textarea') {
@@ -277,7 +283,6 @@
         });
     }
 
-    // Zurück zur robusten nativen Druckfunktion
     function generatePDF() {
         if(items.length === 0) return alert("Das Protokoll ist leer!");
 
@@ -297,18 +302,36 @@
             } else if (item.type === 'location') {
                 printHTML += `<div class="print-item">`;
                 if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
-                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com/maps?q=${item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div>
+                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com/?q=${item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div>
                     </div>`;
+            } else if (item.type === 'checkbox') {
+                // Hier ist der Fix für den Absturz! (Boolean zu "Offen/Erledigt" Text konvertieren)
+                const statusText = item.value ? '☑ Erledigt' : '☐ Offen';
+                const textColor = item.value ? '#2ecc71' : '#e74c3c';
+                
+                printHTML += `<div class="print-item" style="display:flex; justify-content:space-between; align-items:center;">`;
+                if(item.label) printHTML += `<div class="print-label" style="margin:0; font-size:14px; color:#111;">${item.label}</div>`;
+                printHTML += `<div style="font-weight:bold; color:${textColor};">${statusText}</div>`;
+                printHTML += `</div>`;
+            } else if (item.type === 'photo') {
+                printHTML += `<div class="print-item">`;
+                if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
+                if(item.photo) printHTML += `<img src="${item.photo}" class="print-photo">`;
+                else printHTML += `<div class="print-value">- Kein Foto hinterlegt -</div>`;
+                printHTML += `</div>`;
             } else {
                 printHTML += `<div class="print-item">`;
                 if(item.label) {
                     printHTML += `<div class="print-label">${item.label}</div>`;
                 }
-                printHTML += `<div class="print-value">${item.value ? item.value.replace(/\n/g, '<br>') : '-'}</div>`;
+                
+                // Sicherheitshalber wandeln wir jeden Inhalt in einen String um, bevor ".replace" greift
+                const textVal = String(item.value || '').replace(/\n/g, '<br>');
+                printHTML += `<div class="print-value">${textVal || '-'}</div>`;
                 
                 if(item.type === 'combo') {
                     if(item.photo) printHTML += `<img src="${item.photo}" class="print-photo">`;
-                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com/maps?q=${item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
+                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com/?q=${item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
                 }
                 printHTML += `</div>`;
             }
@@ -316,7 +339,6 @@
 
         printZone.innerHTML = printHTML;
         
-        // Timeout gibt dem Browser kurz Zeit, das Layout für den Druck aufzubauen
         setTimeout(() => { window.print(); }, 300);
     }
 </script>
