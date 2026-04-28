@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uebergabeprotokoll-v11'; 
+const CACHE_NAME = 'uebergabeprotokoll-v17'; 
 const ASSETS = [
     './',
     './index.html',
