@@ -69,7 +69,7 @@
         </div>
         
         <div class="project-header" style="background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;">
-            <label>Projekt</label>
+            <label>Projekt / Protokoll</label>
             <select id="project-select" onchange="switchProject()" style="margin-bottom: 5px;"></select>
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
@@ -125,11 +125,11 @@
 <div id="print-zone"></div>
 
 <script>
-    // --- APP INSTALLATION (PWA) - HIER WAR DER FEHLER! ---
+    // --- APP INSTALLATION (PWA) ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('Service Worker registriert! App ist installierbar.'))
+            .then(reg => console.log('Service Worker registriert!'))
             .catch(err => console.log('Service Worker Fehler:', err));
         });
     }
@@ -137,6 +137,7 @@
     const dbName = "BauProtokollDB", storeName = "projectsStore";
     let dbInstance = null, projects = {}, currentProjectName = "", items = [];
 
+    // --- Datenbank initialisieren ---
     async function initDB() {
         if (dbInstance) return dbInstance;
         return new Promise((res) => {
@@ -148,6 +149,7 @@
     async function saveToDB(key, data) { const db = await initDB(); db.transaction(storeName, "readwrite").objectStore(storeName).put(data, key); }
     async function loadFromDB(key) { const db = await initDB(); return new Promise(res => { let req = db.transaction(storeName, "readonly").objectStore(storeName).get(key); req.onsuccess = () => res(req.result); }); }
 
+    // --- App Start ---
     window.addEventListener('DOMContentLoaded', async () => {
         const savedData = await loadFromDB('bau_projects');
         const savedProject = await loadFromDB('bau_current_project');
@@ -155,12 +157,12 @@
         currentProjectName = savedProject || Object.keys(projects)[0];
         items = projects[currentProjectName] || [];
         renderProjectSelect(); render();
-        loadTemplatesFromGitHub(); // Vorlagen laden
+        loadTemplatesFromGitHub(); 
     });
 
     function saveProjects() { projects[currentProjectName] = items; saveToDB('bau_projects', projects); saveToDB('bau_current_project', currentProjectName); }
 
-    // --- Vorlagen von GitHub laden ---
+    // --- Vorlagen von GitHub laden (Sicherer 1-Klick-Import) ---
     async function loadTemplatesFromGitHub() {
         // !!! WICHTIG: ÄNDERE DIESE BEIDEN WERTE ZU DEINEN DATEN !!!
         const username = "kalcaaro112"; // z.B. "MaxMustermann"
@@ -183,21 +185,61 @@
 
             container.innerHTML = ''; 
             jsonFiles.forEach(file => {
-                const btn = document.createElement('a');
-                btn.href = file.download_url;
+                const btn = document.createElement('button');
                 btn.className = 'btn-action';
-                btn.style.cssText = "text-align:center; text-decoration:none; background: #2980b9; display:block; padding:8px;";
+                btn.style.cssText = "text-align:center; background: #2980b9; margin-bottom:5px; display:block; width:100%; border:none; cursor:pointer;";
+                
                 const niceName = file.name.replace('.json', '').replace(/_/g, ' ');
-                btn.innerText = "📥 " + niceName;
-                btn.setAttribute('download', file.name);
+                btn.innerText = "📄 Vorlage: " + niceName;
+                
+                btn.onclick = async () => {
+                    if (!confirm(`Möchtest du die Vorlage "${niceName}" hinzufügen? (Deine bisherigen Projekte bleiben erhalten!)`)) return;
+                    
+                    try {
+                        btn.innerText = "⏳ Importiere...";
+                        const res = await fetch(file.download_url);
+                        const importedData = await res.json(); 
+                        
+                        let lastAdded = "";
+                        // Sichern: Prüfen, ob der Name schon existiert, sonst (1) anhängen
+                        for (let pName in importedData) {
+                            let newName = pName;
+                            let counter = 1;
+                            while (projects[newName]) {
+                                newName = pName + " (" + counter + ")";
+                                counter++;
+                            }
+                            
+                            projects[newName] = importedData[pName];
+                            projects[newName].forEach(item => item.id = 'import_' + Date.now() + Math.floor(Math.random()*1000));
+                            lastAdded = newName;
+                        }
+                        
+                        if(lastAdded) {
+                            currentProjectName = lastAdded;
+                            items = projects[currentProjectName];
+                        }
+                        
+                        saveProjects(); 
+                        renderProjectSelect(); 
+                        render();
+                        
+                        alert(`Erfolg! Vorlage wurde sicher hinzugefügt.`);
+                        btn.innerText = "📄 Vorlage: " + niceName;
+                    } catch (err) {
+                        alert("Fehler beim Importieren der Vorlage. Prüfe dein Internet.");
+                        btn.innerText = "📄 Vorlage: " + niceName;
+                    }
+                };
+
                 container.appendChild(btn);
             });
         } catch (err) {
-            container.innerHTML = '<div style="font-size:0.75rem; color:#e74c3c; text-align:center;">Ordner "templates" nicht gefunden oder kein Internet.</div>';
+            container.innerHTML = '<div style="font-size:0.75rem; color:#e74c3c; text-align:center;">Ordner "templates" nicht gefunden oder offline.</div>';
         }
     }
 
-    // --- Import / Export ---
+    // --- Manueller Import & Export (Sicher gemacht) ---
     function exportAllProjects() {
         saveProjects(); 
         const dataStr = JSON.stringify(projects, null, 2);
@@ -215,11 +257,25 @@
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if (confirm("Möchtest du diese Daten importieren? (Bestehende mit gleichem Namen werden überschrieben)")) {
-                    projects = { ...projects, ...importedData };
-                    currentProjectName = Object.keys(projects)[0];
+                if (confirm("Daten importieren? Deine aktuellen Projekte bleiben sicher erhalten!")) {
+                    let lastAdded = currentProjectName;
+                    
+                    for (let pName in importedData) {
+                        let newName = pName;
+                        let counter = 1;
+                        while (projects[newName]) {
+                            newName = pName + " (" + counter + ")";
+                            counter++;
+                        }
+                        projects[newName] = importedData[pName];
+                        projects[newName].forEach(item => item.id = 'import_' + Date.now() + Math.floor(Math.random()*1000));
+                        lastAdded = newName;
+                    }
+                    
+                    currentProjectName = lastAdded;
                     items = projects[currentProjectName];
-                    saveProjects(); renderProjectSelect(); render(); alert("Erfolgreich importiert!");
+                    
+                    saveProjects(); renderProjectSelect(); render(); alert("Erfolgreich hinzugefügt!");
                 }
             } catch (err) { alert("Ungültige Datei."); }
         };
@@ -227,7 +283,7 @@
         event.target.value = ""; 
     }
 
-    // --- Editor Logik ---
+    // --- Editor Logik & Menü ---
     function renderProjectSelect() {
         const sel = document.getElementById('project-select'); sel.innerHTML = '';
         for (let p in projects) { let o = document.createElement('option'); o.value = p; o.innerText = p; if(p===currentProjectName) o.selected=true; sel.appendChild(o); }
@@ -251,6 +307,7 @@
     function editLabel(id) { const item = items.find(i => i.id === id); if(item) { const newLabel = prompt("Neue Beschriftung (leer lassen für keine):", item.label); if(newLabel !== null) { item.label = newLabel.trim(); saveProjects(); render(); } } }
     function update(id, field, val) { const i = items.find(x => x.id === id); if(i) i[field] = val; saveProjects(); }
 
+    // --- Bild- und GPS-Verarbeitung ---
     function handleFile(e, id) {
         const file = e.target.files[0]; if (!file) return;
         const reader = new FileReader(); reader.readAsDataURL(file);
@@ -270,10 +327,12 @@
         navigator.geolocation.getCurrentPosition(p => { update(id, field, `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`); render(); }, () => alert("GPS Fehler"), { enableHighAccuracy: true });
     }
 
+    // --- Editor Rendern ---
     function render() {
         const list = document.getElementById('editor-list'); list.innerHTML = '';
         items.forEach(item => {
             const card = document.createElement('div'); card.className = 'field-card';
+            
             const displayLabel = item.label ? item.label : '<span style="color:#888; font-weight:normal;">(Ohne Beschriftung)</span>';
             
             let html = `
@@ -296,7 +355,7 @@
                 html += `<label class="photo-upload-box">📷 Foto aufnehmen<input type="file" accept="image/*" style="display:none" onchange="handleFile(event, '${item.id}')"></label>
                          ${item.photo ? `<img src="${item.photo}" class="photo-preview-img">` : ''}`;
             } else if (item.type === 'location') {
-                 if (item.value) html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com{item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
+                 if (item.value) html += `<div style="margin-bottom: 8px;"><b>${item.value}</b></div><div style="display: flex; gap: 10px;"><a href="https://maps.google.com/?q=${item.value}" target="_blank" style="background: #2980b9; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">🗺️ Maps öffnen</a><button class="btn-ctrl btn-delete" onclick="update('${item.id}', 'value', '')">🗑️ Neu</button></div>`;
                  else html += `<button class="btn-action" style="background:#2980b9;width:100%" onclick="getLocation('${item.id}', 'value')">📍 Standort abrufen</button>`;
             } else if (item.type === 'checkbox') {
                 html += `<div style="display:flex;align-items:center;gap:10px;"><input type="checkbox" ${item.value?'checked':''} onchange="update('${item.id}', 'value', this.checked)"><label>Erledigt / OK</label></div>`;
@@ -312,6 +371,7 @@
         });
     }
 
+    // --- Druckfunktion (Generiert die Druckansicht und öffnet den Dialog) ---
     function generatePDF() {
         if(items.length === 0) return alert("Das Protokoll ist leer!");
         const printZone = document.getElementById('print-zone');
@@ -329,7 +389,7 @@
             } else if (item.type === 'location') {
                 printHTML += `<div class="print-item">`;
                 if(item.label) printHTML += `<div class="print-label">${item.label}</div>`;
-                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com{item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div></div>`;
+                printHTML += `<div class="print-value">${item.value ? `<a href="https://maps.google.com/?q=${item.value}" target="_blank" style="color:var(--primary);">📍 Standort in Google Maps öffnen (${item.value})</a>` : '-'}</div></div>`;
             } else if (item.type === 'checkbox') {
                 const statusText = item.value ? '☑ Erledigt' : '☐ Offen';
                 const textColor = item.value ? '#2ecc71' : '#e74c3c';
@@ -349,7 +409,7 @@
                 printHTML += `<div class="print-value">${textVal || '-'}</div>`;
                 if(item.type === 'combo') {
                     if(item.photo) printHTML += `<img src="${item.photo}" class="print-photo">`;
-                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com{item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
+                    if(item.coords) printHTML += `<div class="print-maps"><a href="https://maps.google.com/?q=${item.coords}" target="_blank">📍 Standort in Google Maps öffnen (${item.coords})</a></div>`;
                 }
                 printHTML += `</div>`;
             }
